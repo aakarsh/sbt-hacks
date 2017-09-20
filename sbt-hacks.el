@@ -1,8 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Hack to provide light weight support for simple sbt-repl usage.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 (defvar an/sbt-buffer-name "*sbt*")
 
 (defvar an/sbt-buffer-skip-line-regexp '( "^package.*" "[ \t\f\v\n\rs]+" ))
@@ -45,7 +43,6 @@
                 do
                 (an/sbt-send-line line)))))))
 
-
 (defun an/sbt-eval-buffer()
   (interactive)
   (an/sbt-eval-region (point-min) (point-max)))
@@ -85,25 +82,44 @@
    (an/sbt-send-line
     (format "%s.getClass.getMethods.foreach(println)" (thing-at-point 'symbol))))
 
-(setq an/sbt-hacks-map
+(defun an/scala-thing-at-point()
+  "Search scala files in current directory for thing at point 'symbol"
+  (interactive)
+  (save-excursion
+    (rgrep (thing-at-point 'symbol)
+           "*.scala"
+           (file-name-directory
+            (buffer-file-name (current-buffer))))))
+
+(defvar an/sbt-navitation-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "." 'an/scala-thing-at-point)
+    map))
+
+(defvar an/sbt-console-commands-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "b" 'an/sbt-eval-buffer)
+    (define-key map "r" 'an/sbt-eval-region)
+    (define-key map "q" 'an/sbt-console-quit)
+    (define-key map "t" 'an/sbt-console-show-type)
+    (define-key map "@" 'an/sbt-show-class)
+    map))      
+
+(defvar an/sbt-hacks-map
   (let ((map   (make-sparse-keymap)))
-    (define-key map  "b" 'an/sbt-eval-buffer)
-    (define-key map  "r" 'an/sbt-eval-buffer)
     (define-key map  "l" 'an/sbt-load-file)
     (define-key map  "g" 'an/sbt-pop-to-buffer)
-    (define-key map  "q" 'an/sbt-console-quit)
     (define-key map  "s" 'an/sbt-console-start)
-    (define-key map  "y" 'an/sbt-console-show-type)
-    (define-key map  "t" 'an/sbt-run-test)
-    (define-key map  "c" 'an/sbt-compile)
-    (define-key map  "@" 'an/sbt-show-class)
+    (define-key map  "t" 'an/sbt-run-test)    
+    ;; sub modes for navigation and command map 
+    (define-key map  "n" an/sbt-navitation-map)
+    (define-key map  "c" an/sbt-console-commands-map)
+    
     map))
 
 (global-set-key (kbd "\C-c s") an/sbt-hacks-map)
 
-
 ;;;; TODO better comint.
-
 (defvar an/sbt-path "/usr/bin/sbt")
 
 (defvar an/sbt-hacks-mode-map
@@ -118,6 +134,7 @@
 
 (defvar an/sbt-prompt-regexp "^\\(?:\\[[^@]+@[^@]+\\]\\)"
   "Prompt for `run-sbt-lit'.")
+
 
 (defun an/run-sbt-hacks ()
   "Run an inferior instance of `an/sbt-hacks-' inside Emacs."
@@ -134,5 +151,3 @@
       (apply 'make-comint-in-buffer "SBT" buffer
              runner an/sbt-hacks--arguments)
       (an/sbt-hacks-mode))))
-
-
