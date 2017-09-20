@@ -80,6 +80,10 @@
    (format ":load %s"
            (buffer-file-name (current-buffer)))))
 
+(defun an/sbt-show-class()
+  (interactive)
+   (an/sbt-send-line
+    (format "%s.getClass.getMethods.foreach(println)" (thing-at-point 'symbol))))
 
 (setq an/sbt-hacks-map
   (let ((map   (make-sparse-keymap)))
@@ -92,6 +96,7 @@
     (define-key map  "y" 'an/sbt-console-show-type)
     (define-key map  "t" 'an/sbt-run-test)
     (define-key map  "c" 'an/sbt-compile)
+    (define-key map  "@" 'an/sbt-show-class)
     map))
 
 (global-set-key (kbd "\C-c s") an/sbt-hacks-map)
