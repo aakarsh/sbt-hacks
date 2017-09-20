@@ -33,9 +33,6 @@
              runner an/sbt-hacks--arguments)
       (an/sbt-hacks-mode))))
 
-
-
-
 (defvar an/sbt-buffer-name "*sbt*")
 
 (defvar an/sbt-buffer-skip-line-regexp '( "^package.*" ))
