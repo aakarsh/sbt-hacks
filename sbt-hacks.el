@@ -2,6 +2,90 @@
 ;; Hack to provide light weight support for simple sbt-repl usage.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+(defvar an/sbt-buffer-name "*sbt*")
+
+(defvar an/sbt-buffer-skip-line-regexp '( "^package.*" "[ \t\f\v\n\rs]+" ))
+
+(defun an/sbt-skip-line-p(line)
+  (let* ((found-match nil))
+    (loop for regexp in an/sbt-buffer-skip-line-regexp do
+          (if (string-match regexp line)
+              (setq found-match t)))
+    found-match))
+
+(defun an/sbt-pop-to-buffer()
+  (interactive)
+  (pop-to-buffer (get-buffer an/sbt-buffer-name)))
+
+(defun an/sbt-send-line(line)
+  (interactive "sSend SBT : ")
+    (save-excursion
+    (save-restriction
+      (let ((an/sbt-buffer (get-buffer an/sbt-buffer-name)))            
+        (if (not an/sbt-buffer)
+            (error "No buffer called : %s " an/sbt-buffer-name))
+        (with-current-buffer an/sbt-buffer
+          (when (> (length line) 0) (not (an/sbt-skip-line-p line))
+                (insert (format "%s\n" line))
+                (comint-send-input)))))))
+
+        
+(defun an/sbt-eval-region(start end)
+  (interactive "rEvaluate region in shell buffer ")  
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (let ((an/sbt-buffer (get-buffer an/sbt-buffer-name))
+            (region (buffer-string)))
+        (if (not an/sbt-buffer)
+            (error "No buffer called : %s " an/sbt-buffer-name))
+        (with-current-buffer an/sbt-buffer
+          (loop for line in (split-string region "[\n\t\r]+" "[ \t\f\v]+" )
+                do
+                (an/sbt-send-line line)))))))
+
+
+(defun an/sbt-eval-buffer()
+  (interactive)
+  (an/sbt-eval-region (point-min) (point-max)))
+
+(defun an/sbt-console-start()
+  (interactive)
+  (an/sbt-send-line "console"))
+
+(defun an/sbt-console-quit()
+  (interactive)
+  (an/sbt-send-line ":quit"))
+
+(defun an/sbt-console-show-type(line)
+  (interactive "sType Of : ")
+  (an/sbt-send-line (format ":type %s" line)))
+
+(defun an/sbt-console-shell-cmd(line)
+  (interactive "sShell Command : ")
+  (an/sbt-send-line (format ":sh %s" line)))
+
+(defun an/sbt-load-file()
+  (interactive)
+  (an/sbt-send-line
+   (format ":load %s"
+           (buffer-file-name (current-buffer)))))
+
+
+(setq an/sbt-hacks-map
+  (let ((map   (make-sparse-keymap)))
+    (define-key map  "b" 'an/sbt-eval-buffer)
+    (define-key map  "r" 'an/sbt-eval-buffer)
+    (define-key map  "l" 'an/sbt-load-file)
+    (define-key map  "g" 'an/sbt-pop-to-buffer)
+    map))
+
+(global-set-key (kbd "\C-c s") an/sbt-hacks-map)
+
+
+;;;; TODO better comint.
+
 (defvar an/sbt-path "/usr/bin/sbt")
 
 (defvar an/sbt-hacks-mode-map
@@ -33,38 +117,4 @@
              runner an/sbt-hacks--arguments)
       (an/sbt-hacks-mode))))
 
-(defvar an/sbt-buffer-name "*sbt*")
-
-(defvar an/sbt-buffer-skip-line-regexp '( "^package.*" ))
-
-(defun an/sbt-skip-line-p(line)
-  (let* ((found-match nil))
-    (loop for regexp in an/sbt-buffer-skip-line-regexp do
-          (if (string-match regexp line)
-              (setq found-match t)))
-  found-match))
-
-(defun an/sbt-eval-region(start end)
-  (interactive "rEvaluate region in shell buffer ")  
-  (save-excursion
-    (save-restriction
-      (narrow-to-region start end)
-      (let ((an/sbt-buffer (get-buffer an/sbt-buffer-name))
-            (region (buffer-string)))
-        (if (not an/sbt-buffer)
-            (error "No buffer called : %s " an/sbt-buffer-name))
-        (with-current-buffer an/sbt-buffer
-          (loop for line in (split-string region "[\n\t\r]+" "[ \t\f\v]+" )
-                if (and (> (length line) 0) (not (an/sbt-skip-line-p line)))
-                do
-                (insert line)
-                (comint-send-input)))))))
-
-(defun an/sbt-eval-buffer()
-  (interactive)
-  (an/sbt-eval-region (point-min) (point-max)))
-
-;; use hacks for now 
-(global-set-key (kbd "\C-c b") 'an/sbt-eval-buffer)
-(global-set-key (kbd "\C-c r") 'an/sbt-eval-region)
 
