@@ -58,6 +58,14 @@
   (interactive)
   (an/sbt-send-line ":quit"))
 
+(defun an/sbt-run-test()
+  (interactive)
+  (an/sbt-send-line "test"))
+
+(defun an/sbt-compile()
+  (interactive)
+  (an/sbt-send-line "compile"))
+
 (defun an/sbt-console-show-type(line)
   (interactive "sType Of : ")
   (an/sbt-send-line (format ":type %s" line)))
@@ -79,6 +87,11 @@
     (define-key map  "r" 'an/sbt-eval-buffer)
     (define-key map  "l" 'an/sbt-load-file)
     (define-key map  "g" 'an/sbt-pop-to-buffer)
+    (define-key map  "q" 'an/sbt-console-quit)
+    (define-key map  "s" 'an/sbt-console-start)
+    (define-key map  "y" 'an/sbt-console-show-type)
+    (define-key map  "t" 'an/sbt-run-test)
+    (define-key map  "c" 'an/sbt-compile)
     map))
 
 (global-set-key (kbd "\C-c s") an/sbt-hacks-map)
